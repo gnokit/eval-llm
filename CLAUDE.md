@@ -1,111 +1,73 @@
----
-description: Use Bun instead of Node.js, npm, pnpm, or vite.
-globs: "*.ts, *.tsx, *.html, *.css, *.js, *.jsx, package.json"
-alwaysApply: false
----
+# CLAUDE.md
 
-Default to using Bun instead of Node.js.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-- Use `bun <file>` instead of `node <file>` or `ts-node <file>`
-- Use `bun test` instead of `jest` or `vitest`
-- Use `bun build <file.html|file.ts|file.css>` instead of `webpack` or `esbuild`
-- Use `bun install` instead of `npm install` or `yarn install` or `pnpm install`
-- Use `bun run <script>` instead of `npm run <script>` or `yarn run <script>` or `pnpm run <script>`
-- Bun automatically loads .env, so don't use dotenv.
+## Project Overview
 
-## APIs
+This is an **LLM evaluation CLI tool** that tests language models using a standardized suite of prompts in Traditional Chinese. It evaluates model performance across various tasks including summarization, creative writing, translation, RAG (Retrieval-Augmented Generation), sentiment analysis, and business writing.
 
-- `Bun.serve()` supports WebSockets, HTTPS, and routes. Don't use `express`.
-- `bun:sqlite` for SQLite. Don't use `better-sqlite3`.
-- `Bun.redis` for Redis. Don't use `ioredis`.
-- `Bun.sql` for Postgres. Don't use `pg` or `postgres.js`.
-- `WebSocket` is built-in. Don't use `ws`.
-- Prefer `Bun.file` over `node:fs`'s readFile/writeFile
-- Bun.$`ls` instead of execa.
+## Architecture
 
-## Testing
+The project follows a modular architecture:
 
-Use `bun test` to run tests.
+- **`index.ts`** - Main entry point that delegates to src/index.ts
+- **`src/index.ts`** - Core evaluation engine with CLI argument parsing, Ollama integration, and result generation
+- **`src/prompts/`** - Test prompt definitions and test suite configuration
+- **`src/types/`** - TypeScript type definitions for test structures
+- **`result/`** - Generated markdown reports from evaluation runs
 
-```ts#index.test.ts
-import { test, expect } from "bun:test";
+## Key Components
 
-test("hello world", () => {
-  expect(1).toBe(1);
-});
+### Test Suite Structure (`src/types/test.types.ts`)
+- `TestPrompt` - Individual test cases with name, purpose, prompt content, category, and tags
+- `TestSuite` - Collection of test prompts for systematic evaluation
+- `TestExecution` - Results from individual test runs
+- `TestResultCollection` - Aggregated results with summary statistics
+
+### Evaluation Engine (`src/index.ts`)
+- **CLI Interface**: Takes model ID and test suite name as arguments
+- **Ollama Integration**: Uses `ollama` package to interact with local Ollama server
+- **Progress Tracking**: Real-time progress updates with success/failure indicators
+- **Report Generation**: Creates bilingual (Traditional Chinese/English) markdown reports
+
+### Test Content (`src/prompts/testSuite.ts`)
+Contains 8 specialized test prompts covering:
+- Traditional Chinese summarization
+- Creative writing with cultural integration
+- English-to-Traditional Chinese translation
+- RAG (document-based Q&A)
+- Sentiment analysis
+- Business correspondence
+- Cultural content creation (festivals)
+- Academic writing
+
+## Commands
+
+### Development
+```bash
+# Install dependencies
+bun install
+
+# Run evaluation for a specific model
+bun run index.ts <model_id> basic-llm-evaluation-v1
+
+# Example usage
+bun run index.ts llama3.1 basic-llm-evaluation-v1
+bun run index.ts qwen3:30b-a3b-instruct-2507-q4_K_M basic-llm-evaluation-v1
 ```
 
-## Frontend
+### Available Test Suites
+- `basic-llm-evaluation-v1` - The only currently available test suite
 
-Use HTML imports with `Bun.serve()`. Don't use `vite`. HTML imports fully support React, CSS, Tailwind.
+## Dependencies
+- **ollama** (v0.5.16) - Client library for Ollama API
+- **@types/bun** - Bun TypeScript definitions
 
-Server:
+## Output
+Evaluation results are saved to markdown files in the `result/` directory with naming pattern:
+`result_<model_id>_<suite_name>_<date>.md`
 
-```ts#index.ts
-import index from "./index.html"
-
-Bun.serve({
-  routes: {
-    "/": index,
-    "/api/users/:id": {
-      GET: (req) => {
-        return new Response(JSON.stringify({ id: req.params.id }));
-      },
-    },
-  },
-  // optional websocket support
-  websocket: {
-    open: (ws) => {
-      ws.send("Hello, world!");
-    },
-    message: (ws, message) => {
-      ws.send(message);
-    },
-    close: (ws) => {
-      // handle close
-    }
-  },
-  development: {
-    hmr: true,
-    console: true,
-  }
-})
-```
-
-HTML files can import .tsx, .jsx or .js files directly and Bun's bundler will transpile & bundle automatically. `<link>` tags can point to stylesheets and Bun's CSS bundler will bundle.
-
-```html#index.html
-<html>
-  <body>
-    <h1>Hello, world!</h1>
-    <script type="module" src="./frontend.tsx"></script>
-  </body>
-</html>
-```
-
-With the following `frontend.tsx`:
-
-```tsx#frontend.tsx
-import React from "react";
-
-// import .css files directly and it works
-import './index.css';
-
-import { createRoot } from "react-dom/client";
-
-const root = createRoot(document.body);
-
-export default function Frontend() {
-  return <h1>Hello, world!</h1>;
-}
-
-root.render(<Frontend />);
-```
-
-Then, run index.ts
-
-```sh
-bun --hot ./index.ts
-```
-
-For more information, read the Bun API docs in `node_modules/bun-types/docs/**.md`.
+## Requirements
+- Local Ollama server running on http://127.0.0.1:11434
+- Models must be pulled in Ollama before testing
+- Traditional Chinese font support for proper text rendering
