@@ -1,5 +1,6 @@
 import { testSuite } from './prompts';
 import type { TestPrompt } from './types/test.types';
+import { Ollama } from 'ollama';
 
 async function runEvaluation(modelId: string, suiteName: string) {
   console.log(`Starting evaluation for model: ${modelId}`);
@@ -37,32 +38,18 @@ async function executePrompt(modelId: string, prompt: TestPrompt) {
   const startTime = Date.now();
   
   try {
-    const process = Bun.spawn(['ollama', 'run', modelId, prompt.prompt], {
-      stdout: 'pipe',
-      stderr: 'pipe',
+    const ollama = new Ollama({ host: 'http://127.0.0.1:11434' });
+    
+    const response = await ollama.chat({
+      model: modelId,
+      messages: [{ role: 'user', content: prompt.prompt }],
     });
     
-    const [stdout, stderr] = await Promise.all([
-      new Response(process.stdout).text(),
-      new Response(process.stderr).text(),
-    ]);
-    
-    const exitCode = await process.exited;
     const durationMs = Date.now() - startTime;
-    
-    if (exitCode !== 0) {
-      return {
-        prompt,
-        response: '',
-        durationMs,
-        success: false,
-        error: stderr || `Process exited with code ${exitCode}`,
-      };
-    }
     
     return {
       prompt,
-      response: stdout.trim(),
+      response: response.message.content,
       durationMs,
       success: true,
     };
@@ -80,7 +67,7 @@ async function executePrompt(modelId: string, prompt: TestPrompt) {
 }
 
 function formatDate(date: Date): string {
-  return date.toISOString().split('T')[0];
+  return date.toISOString().split('T')[0] || '';
 }
 
 async function generateMarkdownReport(
@@ -156,6 +143,11 @@ if (args.length !== 2) {
 }
 
 const [modelId, suiteName] = args;
+
+if (!modelId || !suiteName) {
+  console.error('Both model_id and test_suite_name are required');
+  process.exit(1);
+}
 
 // Validate suite name - only testSuite is available
 if (suiteName !== 'basic-llm-evaluation-v1') {
