@@ -79,19 +79,19 @@ async function generateMarkdownReport(
   const dateStr = formatDate(new Date());
   const filename = `result_${modelId}_${suiteName}_${dateStr}.md`;
   
-  let content = `# LLM Evaluation Report
+  let content = `# LLM 評估報告 / LLM Evaluation Report
 
-**Model:** ${modelId}  
-**Test Suite:** ${suiteName}  
-**Date:** ${new Date().toISOString()}  
-**Total Execution Time:** ${totalTime}ms  
-**Total Prompts:** ${results.length}
+**模型 / Model:** ${modelId}  
+**測試套件 / Test Suite:** ${suiteName}  
+**日期 / Date:** ${new Date().toISOString()}  
+**總執行時間 / Total Execution Time:** ${totalTime}ms  
+**總提示數 / Total Prompts:** ${results.length}
 
-## Summary
+## 摘要 / Summary
 
-- **Successful:** ${results.filter((r: any) => r.success).length}
-- **Failed:** ${results.filter((r: any) => !r.success).length}
-- **Average Response Time:** ${Math.round(results.reduce((sum: number, r: any) => sum + r.durationMs, 0) / results.length)}ms
+- **成功 / Successful:** ${results.filter((r: any) => r.success).length}
+- **失敗 / Failed:** ${results.filter((r: any) => !r.success).length}
+- **平均回應時間 / Average Response Time:** ${Math.round(results.reduce((sum: number, r: any) => sum + r.durationMs, 0) / results.length)}ms
 
 ---
 
@@ -100,26 +100,26 @@ async function generateMarkdownReport(
   for (const result of results) {
     content += `## ${result.prompt.name}
 
-### Metadata
-- **Purpose:** ${result.prompt.purpose}
-- **Category:** ${result.prompt.category || 'N/A'}
-- **Tags:** ${(result.prompt.tags || []).join(', ')}
-- **Execution Time:** ${result.durationMs}ms
-- **Status:** ${result.success ? '✅ Success' : '❌ Failed'}
+### 中繼資料 / Metadata
+- **目的 / Purpose:** ${result.prompt.purpose}
+- **類別 / Category:** ${result.prompt.category || '無 / N/A'}
+- **標籤 / Tags:** ${(result.prompt.tags || []).join(', ')}
+- **執行時間 / Execution Time:** ${result.durationMs}ms
+- **狀態 / Status:** ${result.success ? '✅ 成功 / Success' : '❌ 失敗 / Failed'}
 
-### Prompt
+### 提示 / Prompt
 \`\`\`
 ${result.prompt.prompt}
 \`\`\`
 
-### Response
+### 回應 / Response
 \`\`\`
-${result.response || 'No response generated'}
+${result.response || '無回應產生 / No response generated'}
 \`\`\`
 `;
 
     if (result.error) {
-      content += `### Error
+      content += `### 錯誤 / Error
 \`\`\`
 ${result.error}
 \`\`\`
